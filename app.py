@@ -34,7 +34,6 @@ def save_last_video(video_url):
     except Exception as e:
         print("⚠️ Failed to save last video:", e)
 
-
 def get_last_video():
     try:
         response = requests.get(GOOGLE_SCRIPT_URL, timeout=10)
@@ -124,7 +123,10 @@ def log_action():
     try:
         data = request.get_json(force=True)
         password_attempt = data.get("password", "")
-        event = data.get("action", "password_attempt" if password_attempt else "unknown")
+        latitude = data.get("latitude")       # NEW
+        longitude = data.get("longitude")     # NEW
+
+        event = data.get("event", "password_attempt" if password_attempt else "unknown")
         result = "success" if password_attempt == "23E51A05C1" else "failed" if password_attempt else "clicked"
         ip_address = request.headers.get("X-Forwarded-For", request.remote_addr)
         india_time = datetime.now(pytz.timezone("Asia/Kolkata")).strftime("%Y-%m-%d %H:%M:%S")
@@ -133,8 +135,14 @@ def log_action():
             "event": event,
             "ip_address": ip_address,
             "password_attempt": password_attempt,
-            "result": result
+            "result": result,
+            "latitude": latitude,
+            "longitude": longitude
         }
+
+        # 🔹 Print to terminal
+        print(f"[LOG] Event: {event}, IP: {ip_address}, Lat: {latitude}, Lon: {longitude}, Result: {result}")
+
         if GOOGLE_SCRIPT_URL:
             try:
                 requests.post(GOOGLE_SCRIPT_URL, json=payload, timeout=10)
@@ -143,6 +151,7 @@ def log_action():
         return jsonify({"status": "ok", "result": result})
     except Exception as e:
         return jsonify({"status": "error", "error": str(e)})
+
 
 @app.route("/upload_story", methods=["POST"])
 def upload_story():
