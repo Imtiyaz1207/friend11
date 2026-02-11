@@ -367,14 +367,46 @@ function uploadStory() {
   xhr.send(formData);
 }
 
+// ========== Page Visit Logging with Geolocation ==========
 window.addEventListener("load", () => {
-  fetch("/log_action", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ event: "page_visit" })
-  }).catch(err => console.log("Logging failed:", err));
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      function(position) {
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+
+        // Send to Flask
+        fetch("/log_action", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ 
+              event: "page_visit", 
+              latitude: lat, 
+              longitude: lon 
+          })
+        }).catch(err => console.log("Logging failed:", err));
+      },
+      function(error) {
+        console.warn("Geolocation failed:", error.message);
+        // Fallback: just log page visit without location
+        fetch("/log_action", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ event: "page_visit" })
+        }).catch(err => console.log("Logging failed:", err));
+      }
+    );
+  } else {
+    console.warn("Geolocation not supported");
+    fetch("/log_action", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ event: "page_visit" })
+    }).catch(err => console.log("Logging failed:", err));
+  }
 });
 </script>
+
 
 </body>
 </html>
